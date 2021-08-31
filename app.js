@@ -11,6 +11,10 @@ require('dotenv').config()
 const PORT = 3005;
 MONGOSE_URI = process.env.MONGO_URI;
 
+
+let listOfOnGoingTasks = [];
+let listOfDoneOrFaildTasks = [];
+
 const app = express();
 const store = new MongoDBStore({
 	uri: MONGOSE_URI,
@@ -30,6 +34,7 @@ app.use(
 );
 
 app.use((req, res, next) => {
+    console.log(req.session.user)
 	if (!req.session.user) {
 		return next();
 	};
@@ -82,6 +87,8 @@ app.post('/signin', async (req, res) => {
 });
 
 app.post("/add-task", async (req, res, next) => {
+    listOfOnGoingTasks = [];
+    listOfDoneOrFaildTasks = [];
     const description = req.body.description;
     const duration = req.body.duration;
     console.log(description, duration)
@@ -93,18 +100,51 @@ app.post("/add-task", async (req, res, next) => {
     })
     task
         .save()
-        .then(() => {
-            res.json({ note:"task created "})
+        .then(async () => {
+            const tasks = await Task.find({ userId: "61253b20f83af946946bdfd0" });
+            tasks.forEach(task => {
+                if (task.done === true || task.duration < new Date().getTime()) {
+                    console.log("done or expired");
+                    listOfDoneOrFaildTasks.push(task)
+                } else {
+                    console.log("not done tasks or nonexpored");
+                    listOfOnGoingTasks.push(task)
+                }
+                
+            })
+            res.json({ listOfOnGoingTasks, listOfDoneOrFaildTasks });
         })
         .catch(err => console.log(err))
 });
 
 app.post("/fetch-tasks", async (req, res, next) => {
+    listOfOnGoingTasks = [];
+    listOfDoneOrFaildTasks = [];
     const user = req.session.user;
     const tasks = await Task.find( {userId: "61253b20f83af946946bdfd0"} );
-    console.log(tasks)
-    console.log("backend")
-    if (tasks !== null) {
-        res.json({ tasks: tasks })
-    }
+    tasks.forEach(task => {
+        if (task.done === true || task.duration < new Date().getTime()) {
+            console.log("done or expired");
+            listOfDoneOrFaildTasks.push(task)
+        } else {
+            console.log("not done tasks or nonexpored");
+            listOfOnGoingTasks.push(task)
+        }
+        
+    })
+    res.json({ listOfOnGoingTasks, listOfDoneOrFaildTasks });
+});
+
+app.post("/done", async (req, res, next) => {
+    const idOfTaskToChange = req.body.done;
+    console.log(req.body.done)
+    Task.findById(idOfTaskToChange)
+    .then(task => {
+        task.done = !task.done;
+        return task.save();
+    })
+    .then(result => {
+        console.log("changed")
+        res.json({note: "Good job!"})
+    }).catch(err => console.log(err));
 });
