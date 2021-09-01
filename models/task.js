@@ -10,7 +10,7 @@ const taskSchema = new Schema({
 		type: Schema.Types.ObjectId,
 		required: true,
 		ref: "User",
-	}
+	},
 });
 
 const Task = mongoose.model("Task", taskSchema);
