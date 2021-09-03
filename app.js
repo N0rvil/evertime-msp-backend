@@ -93,11 +93,13 @@ app.post('/signin', async (req, res) => {
 });
 
 app.post("/add-task", async (req, res, next) => {
+    //clearing lists
     listOfOnGoingTasks = [];
     listOfDoneOrFaildTasks = [];
     const description = req.body.description;
     const duration = req.body.duration;
     // console.log(description, duration)
+    //making new task
     const task = new Task({
         description: description,
         duration: new Date().getTime() + (duration * 24 * 3600000),
@@ -107,6 +109,7 @@ app.post("/add-task", async (req, res, next) => {
     task
         .save()
         .then(async () => {
+            //logic for rerendering tasks after adding one
             const tasks = await Task.find({ userId: req.body.userId });
             tasks.forEach(task => {
                 if (task.done === true || task.duration < new Date().getTime()) {
@@ -124,9 +127,11 @@ app.post("/add-task", async (req, res, next) => {
 });
 
 app.post("/fetch-tasks", async (req, res, next) => {
+    //clearing lists
     listOfOnGoingTasks = [];
     listOfDoneOrFaildTasks = [];
     // const user = req.session.user;
+    //logic for rerendering tasks
     const tasks = await Task.find({ userId: req.body.userId });
     tasks.forEach(task => {
         if (task.done === true || task.duration < new Date().getTime()) {
@@ -142,6 +147,7 @@ app.post("/fetch-tasks", async (req, res, next) => {
 });
 
 app.post("/done", async (req, res, next) => {
+    //finding task and changing his done property on opozite
     Task.findById(req.body.taskId)
     .then(task => {
         task.done = !task.done;
